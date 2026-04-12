@@ -10,3 +10,4 @@
 /home/chtrey/projects/H1161TouchStrip-plugin/obj/Release/net8.0/refint/H1161TouchStrip.dll
 /home/chtrey/projects/H1161TouchStrip-plugin/obj/Release/net8.0/H1161TouchStrip.pdb
 /home/chtrey/projects/H1161TouchStrip-plugin/obj/Release/net8.0/ref/H1161TouchStrip.dll
+/home/chtrey/projects/H1161TouchStrip-plugin/obj/Release/net8.0/H1161TouchStrip.sourcelink.json

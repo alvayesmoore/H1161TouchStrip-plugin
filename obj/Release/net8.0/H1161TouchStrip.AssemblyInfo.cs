@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("H1161TouchStrip")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cea1cbbb95e7b51ac497852fda6c9d377e0007ba")]
 [assembly: System.Reflection.AssemblyProductAttribute("H1161TouchStrip")]
 [assembly: System.Reflection.AssemblyTitleAttribute("H1161TouchStrip")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

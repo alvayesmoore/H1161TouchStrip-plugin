@@ -1,5 +1,9 @@
 # H1161 Touch Strip Plugin for OpenTabletDriver
 
+> **⚠️ Alpha Release** — This plugin has been rewritten from the ground up. It may contain bugs. Please report any issues.
+
+[![Latest Release](https://img.shields.io/github/v/release/alvayesmoore/H1161TouchStrip-plugin?label=release&include_prereleases)](https://github.com/alvayesmoore/H1161TouchStrip-plugin/releases)
+
 Converts the Huion Inspiroy H1161 touch strip into native Linux scroll events using a virtual evdev device. No external plugins required.
 
 ## Features
