@@ -50,7 +50,15 @@ systemctl --user restart opentabletdriver.service
 
 Or restart the GUI manually if you don't use the systemd service.
 
-### 5. Add the filter in OpenTabletDriver GUI
+### 5. Set output mode to Absolute
+
+> **Important:** The tablet output mode must be set to **Absolute** for the plugin to work. If set to Relative mode, the touch strip reports will not reach the filter pipeline.
+>
+> ![H1161 output mode setting](huion-h1161-output-mode.png)
+
+In OpenTabletDriver GUI, select your tablet and set the **Output** mode to **Absolute**.
+
+### 6. Add the filter in OpenTabletDriver GUI
 
 1. Open OpenTabletDriver GUI
 2. Go to **Tablets** → select your H1161 → **Configuration**
@@ -59,7 +67,11 @@ Or restart the GUI manually if you don't use the systemd service.
 5. Configure settings (defaults should work for H1161)
 6. Click **Save & Apply**
 
-### 6. Test
+### Recommended Defaults
+
+![H1161 Touch Strip default filter settings](huion-h1161-touchstrip-defaults.png)
+
+### 8. Test
 
 Open any scrollable window (browser, text editor, file manager) and slide the touch strip. You should see content scrolling.
 

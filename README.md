@@ -89,6 +89,14 @@ systemctl --user restart opentabletdriver.service
 
 No additional plugins or binding configuration is needed — the virtual evdev device sends scroll events directly to the OS.
 
+### Recommended Defaults
+
+![H1161 Touch Strip default filter settings](huion-h1161-touchstrip-defaults.png)
+
+> **Important:** The tablet output mode must be set to **Absolute** for the plugin to receive touch strip reports correctly.
+>
+> ![H1161 output mode setting](huion-h1161-output-mode.png)
+
 ## How It Works
 
 1. The plugin registers as a pipeline filter in OpenTabletDriver
@@ -167,6 +175,13 @@ Enable **Reverse Scroll Direction** in the filter settings.
 | `EvdevDevice.cs` | Linux evdev/uinput wrapper using libevdev P/Invoke |
 | `H1161TouchStrip.csproj` | .NET 8.0 project file |
 | `build-and-install.fish` | Fish shell build and install script |
+
+## Screenshots
+
+| Screenshot | Description |
+|---|---|
+| ![Default filter settings](huion-h1161-touchstrip-defaults.png) | Recommended default settings for the H1161 Touch Strip filter |
+| ![Output mode setting](huion-h1161-output-mode.png) | Tablet output mode must be set to **Absolute** |
 
 ## License
 
