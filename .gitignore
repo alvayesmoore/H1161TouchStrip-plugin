@@ -1,0 +1,28 @@
+## Build artifacts
+bin/
+obj/
+out/
+
+## .NET
+*.user
+*.suo
+*.cache
+*.log
+*.pdb
+*.deps.json
+*.dll
+*.exe
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*~
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Config
+.config/

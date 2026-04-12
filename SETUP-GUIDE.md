@@ -1,104 +1,210 @@
 # H1161 Touch Strip Setup Guide
 
-## Current Status ✅
+## Quick Start
 
-Your plugin is working! The logs confirm:
-- Touch strip is detected correctly
-- Direction (UP/DOWN) is calculated properly
-- Positions 1-7 are tracked
-- Stylus is not blocked
+Follow these steps to get the touch strip working as a scroll wheel.
 
-## Problem: No Aux 12/13 Buttons Visible
+### 1. Install system dependencies
 
-This is **normal** - aux buttons 12/13 are **virtual buttons** created by the plugin.
-They don't appear in the tablet debugger or physical button list.
+```bash
+# Arch / CachyOS
+sudo pacman -S libevdev dotnet-sdk-8.0
 
-## Solution: Use Scroll Bindings Plugin
+# Ubuntu / Debian
+sudo apt install libevdev-dev dotnet-sdk-8.0
 
-### Step 1: Install Scroll Bindings
+# Fedora
+sudo dnf install libevdev-devel dotnet-sdk-8.0
+```
+
+### 2. Ensure uinput kernel module is loaded
+
+```bash
+sudo modprobe uinput
+```
+
+This is usually loaded automatically. If you get "device or resource busy" it's already active.
+
+### 3. Build and install the plugin
+
+```bash
+git clone https://github.com/alvayesmoore/H1161TouchStrip-plugin.git
+cd H1161TouchStrip-plugin
+chmod +x build-and-install.fish
+./build-and-install.fish
+```
+
+Or manually:
+
+```bash
+dotnet build -c Release
+mkdir -p ~/.config/OpenTabletDriver/Plugins/H1161TouchStrip
+cp bin/Release/net8.0/H1161TouchStrip.dll ~/.config/OpenTabletDriver/Plugins/H1161TouchStrip/
+```
+
+### 4. Restart OpenTabletDriver
+
+```bash
+systemctl --user restart opentabletdriver.service
+```
+
+Or restart the GUI manually if you don't use the systemd service.
+
+### 5. Add the filter in OpenTabletDriver GUI
 
 1. Open OpenTabletDriver GUI
-2. Go to **Tools** → **Plugin Manager**
-3. Find **"Scroll Bindings"** by Mrcubix
-4. Click **Install**
-5. Restart OTD
+2. Go to **Tablets** → select your H1161 → **Configuration**
+3. In the **Filters** section, click **Add Filter**
+4. Select **H1161 Touch Strip → Scroll**
+5. Configure settings (defaults should work for H1161)
+6. Click **Save & Apply**
 
-### Step 2: Configure Bindings
+### 6. Test
 
-In OTD 0.6.x, there are TWO ways to configure bindings:
+Open any scrollable window (browser, text editor, file manager) and slide the touch strip. You should see content scrolling.
 
-#### Method A: Through Settings File (Recommended)
+## uinput Permissions
 
-1. Close OpenTabletDriver GUI completely
-2. Edit `~/.config/OpenTabletDriver/settings.json`
-3. Add binding configuration (see below)
-4. Save and restart OTD
+The plugin creates a virtual evdev device via `/dev/uinput`. If OpenTabletDriver runs as your user and you see "Failed to initialize evdev" in the logs, you likely need uinput permissions.
 
-#### Method B: Through GUI (If Available)
+### Check current permissions
 
-1. Open OTD GUI
-2. Look for **"Bindings"** tab or section
-3. Click **"+"** to add binding
-4. Select binding type: **"Scroll Bindings"**
-5. Configure:
-   - **Aux Button**: 12 → **Action**: Vertical Scroll Up
-   - **Aux Button**: 13 → **Action**: Vertical Scroll Down
-6. Save
-
-### Step 3: Test
-
-1. Open any application (browser, text editor)
-2. Slide your touch strip
-3. You should see scrolling!
-
-## Alternative: Direct Mouse Wheel Binding
-
-If Scroll Bindings doesn't work, you can create a simpler plugin that directly
-emits mouse wheel events instead of aux button events. Let me know if needed.
-
-## Settings File Configuration
-
-Add this to your `settings.json` under the tablet configuration:
-
-```json
-{
-  "Tablet": {
-    "Identifier": "your-tablet-id",
-    "Bindings": {
-      "Aux12": {
-        "Plugin": "ScrollBinding",
-        "Action": "VerticalScrollUp",
-        "Speed": 5
-      },
-      "Aux13": {
-        "Plugin": "ScrollBinding",
-        "Action": "VerticalScrollDown",
-        "Speed": 5
-      }
-    }
-  }
-}
+```bash
+ls -la /dev/uinput
 ```
 
-## Still Not Working?
+### Option A: Add yourself to the input group
 
-1. Check if Scroll Bindings plugin is installed:
-   - `ls ~/.config/OpenTabletDriver/Plugins/Scroll\ Bindings/`
-
-2. Enable debug logging and check for aux events:
-   - You should see logs when sliding the strip
-
-3. Try using a different output method:
-   - Instead of aux buttons, we can make the plugin emit mouse wheel events directly
-
-## Quick Test Command
-
-Run this while sliding your touch strip to see the events:
-
-```fish
-journalctl --user -u opentabletdriver -f | grep -i "touch\|aux\|scroll"
+```bash
+sudo usermod -aG input $USER
 ```
 
-You should see:
-- `[H1161TouchStrip] Touch strip δ=+1 → DOWN pos=5`
-- (Eventually) Scroll events from Scroll Bindings plugin
+Log out and back in for this to take effect.
+
+### Option B: Udev rule (recommended)
+
+Create `/etc/udev/rules.d/80-uinput.rules`:
+
+```
+KERNEL=="uinput", MODE="0660", GROUP="input"
+```
+
+Then reload rules:
+
+```bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+### Option C: If OTD runs as root (systemd service)
+
+If OpenTabletDriver's systemd service runs as root, uinput access should work automatically. Check with:
+
+```bash
+systemctl --user cat opentabletdriver.service
+```
+
+## Configuration Reference
+
+### Scroll Direction
+
+- **Vertical Scroll** (default) — standard mouse wheel scrolling
+- **Horizontal Scroll** — side-scrolling for trackpads / wide documents
+
+### Reverse Scroll Direction
+
+Toggle this if scrolling up moves content down (or vice versa). Equivalent to "natural scrolling."
+
+### Scroll Delay
+
+Time in milliseconds between scroll events. Lower values = faster response. Default: **15 ms**. Range: 1–1000.
+
+### Scroll Amount
+
+How much each scroll tick moves. Default: **120** (one standard mouse wheel notch). Range: 0–2400.
+
+### Enable Inertia
+
+When enabled, scrolling continues briefly after you lift your finger, with gradually decreasing speed. Similar to trackpad momentum scrolling.
+
+### Inertia Friction
+
+How quickly inertia decelerates. Range: **0.50** (stops fast) to **0.95** (coasts longer). Default: **0.85**.
+
+### Advanced Settings
+
+These default values are correct for the H1161. Only change them if you're adapting the plugin for a different tablet:
+
+| Setting | Default | Description |
+|---|---|---|
+| Touch Strip Report ID (hex) | 0x08 | First byte of touch strip HID reports |
+| Touch Strip Identifier Byte | 0xF0 | Second byte identifier |
+| Position Byte Index | 5 | Byte index containing position value |
+| Min Movement Threshold | 1 | Minimum position delta to trigger scroll |
+
+### Debug Logging
+
+Enable this to see detailed output in OTD logs. Useful for troubleshooting but will spam the log during normal use.
+
+## Verifying It Works
+
+```bash
+# Watch OTD logs for plugin messages
+journalctl --user -u opentabletdriver -f | grep H1161
+
+# Check that the virtual scroll device exists
+cat /proc/bus/input/devices | grep -A5 "H1161 Touch Strip"
+
+# Monitor scroll events directly
+sudo evmon /dev/input/eventXX
+# OR
+sudo cat /dev/input/eventXX | od -A x -t x1z
+```
+
+With debug logging enabled, sliding the touch strip should produce:
+
+```
+[H1161TouchStrip] δ=+1 → scroll 120
+[H1161TouchStrip] δ=-1 → scroll -120
+```
+
+## Adapting for Other Tablets
+
+This plugin can work with other Huion tablets that have touch strips or wheels if they use a similar HID report format. You would need to:
+
+1. Capture raw HID reports from your tablet (enable debug logging, or use `evtest` / `usbhid-dump`)
+2. Identify which bytes identify the touch strip report (update **Touch Strip Report ID** and **Identifier Byte**)
+3. Find which byte contains the position data (update **Position Byte Index**)
+4. Set **Min Movement Threshold** as needed
+
+The plugin does not hardcode any tablet-specific logic beyond the configurable byte offsets.
+
+## Troubleshooting
+
+### Plugin doesn't appear in filter list
+
+- Ensure the DLL is in `~/.config/OpenTabletDriver/Plugins/H1161TouchStrip/`
+- Restart OpenTabletDriver after installing
+- Check that you're running OTD 0.6.x with .NET 8.0 support
+
+### "Failed to initialize evdev" error
+
+- Verify `libevdev` is installed: `ldconfig -p | grep libevdev`
+- Check `/dev/uinput` exists: `ls -la /dev/uinput`
+- Check permissions (see uinput section above)
+- Try loading the kernel module: `sudo modprobe uinput`
+
+### Touch strip is detected but nothing scrolls
+
+- Enable **Debug Logging** and check that position values appear (0x01–0x07)
+- If you see "δ=+1 → scroll 120" but no scrolling, verify the evdev device is registered: `cat /proc/bus/input/devices`
+- Try adjusting **Scroll Delay** — very low values may overwhelm some applications
+
+### Scrolling works but direction is inverted
+
+Enable **Reverse Scroll Direction** in the filter settings.
+
+### Scrolling is too fast or too slow
+
+- **Too fast**: Increase **Scroll Delay** (e.g., 30–50 ms) or decrease **Scroll Amount** (e.g., 60)
+- **Too slow**: Decrease **Scroll Delay** (e.g., 5–10 ms) or increase **Scroll Amount** (e.g., 240)

@@ -1,6 +1,102 @@
 # H1161 Touch Strip Plugin for OpenTabletDriver
 
-Converts Huion Inspiroy H1161 touch strip input into synthetic aux button events that can be bound via the Scroll Bindings plugin.
+Converts the Huion Inspiroy H1161 touch strip into native Linux scroll events using a virtual evdev device. No external plugins required.
+
+## Features
+
+- **Direct scroll output** — creates a virtual evdev device that emits hi-res scroll events directly to the OS
+- **No dependencies** — does not require the Scroll Bindings plugin or any other plugin
+- **Vertical or horizontal scrolling** — switch between vertical and horizontal scroll direction
+- **Reverse direction** — flip scroll direction if up/down feels inverted
+- **Inertia scrolling** — optional momentum that continues scrolling briefly after lifting your finger
+- **Configurable speed** — adjustable scroll amount and delay between scroll ticks
+- **Debug logging** — toggle verbose output for troubleshooting
+
+## Prerequisites
+
+- **Linux** (evdev/uinput kernel support required)
+- **.NET SDK 8.0**
+- **libevdev** — system library for virtual input device creation
+
+Install libevdev:
+
+```bash
+# Arch / CachyOS
+sudo pacman -S libevdev
+
+# Ubuntu / Debian
+sudo apt install libevdev-dev
+
+# Fedora
+sudo dnf install libevdev-devel
+```
+
+## Installation
+
+### Build from source
+
+```bash
+git clone https://github.com/alvayesmoore/H1161TouchStrip-plugin.git
+cd H1161TouchStrip-plugin
+dotnet build -c Release
+```
+
+### Install the plugin
+
+```bash
+mkdir -p ~/.config/OpenTabletDriver/Plugins/H1161TouchStrip
+cp bin/Release/net8.0/H1161TouchStrip.dll ~/.config/OpenTabletDriver/Plugins/H1161TouchStrip/
+```
+
+Or use the included script:
+
+```bash
+chmod +x build-and-install.fish
+./build-and-install.fish
+```
+
+### Restart OpenTabletDriver
+
+```bash
+systemctl --user restart opentabletdriver.service
+# OR restart the GUI manually
+```
+
+## Configuration
+
+### Add to Filter Pipeline
+
+1. Open OpenTabletDriver GUI
+2. Go to **Tablets** → select your H1161 → **Configuration**
+3. In the **Filters** section, add **H1161 Touch Strip → Scroll**
+4. Save configuration
+
+### Filter Settings
+
+| Setting | Default | Description |
+|---|---|---|
+| Scroll Direction | Vertical Scroll | Vertical or horizontal scroll |
+| Reverse Scroll Direction | false | Flip scroll direction |
+| Scroll Delay | 15 ms | Delay between scroll events (1–1000 ms) |
+| Scroll Amount | 120 | Scroll amount per tick (0–2400) |
+| Enable Inertia | false | Continue scrolling after finger lift |
+| Inertia Friction | 0.85 | Deceleration factor (0.50–0.95). Lower = faster stop |
+| Touch Strip Report ID (hex) | 0x08 | HID report ID identifying touch strip data |
+| Touch Strip Identifier Byte | 0xF0 | Second byte identifier for touch strip reports |
+| Position Byte Index | 5 | Byte index containing the touch position |
+| Min Movement Threshold | 1 | Minimum position change to trigger scroll |
+| Debug Logging | false | Enable verbose console output |
+
+No additional plugins or binding configuration is needed — the virtual evdev device sends scroll events directly to the OS.
+
+## How It Works
+
+1. The plugin registers as a pipeline filter in OpenTabletDriver
+2. It inspects every raw HID report from the tablet
+3. When it detects a touch strip report (report ID `0x08`, identifier `0xF0`), it reads the position byte
+4. Position changes between consecutive reports determine scroll direction and velocity
+5. A virtual evdev device named **H1161 Touch Strip** writes hi-res scroll events (`REL_WHEEL_HI_RES` / `REL_HWHEEL_HI_RES`) directly to the Linux input subsystem
+6. If inertia is enabled, scrolling continues briefly after finger lift with friction-based deceleration
 
 ## Raw Data Format
 
@@ -18,186 +114,59 @@ Position 7 (bottom):    08 F0 01 01 00 07 00 00 00 00 13 F5
 ```
 
 Key bytes:
-- **Byte 0**: Report ID = `08` (identifies touch strip reports)
-- **Byte 5**: Position = `00` (no touch) or `01-07` (touch position, top to bottom)
-
-## Installation
-
-### Prerequisites
-
-1. Install .NET SDK 8.0:
-   ```fish
-   yay -S dotnet-sdk-8.0
-   ```
-
-2. Verify installation:
-   ```fish
-   dotnet --version
-   ```
-
-### Build and Install
-
-```fish
-cd /home/chtrey/projects/H1161TouchStrip-plugin
-chmod +x build-and-install.fish
-./build-and-install.fish
-```
-
-The script will:
-1. Check for .NET SDK
-2. Build the plugin
-3. Install to `~/.config/OpenTabletDriver/Plugins/H1161TouchStrip/`
-4. Restart OpenTabletDriver
-
-## Configuration in OpenTabletDriver
-
-### Step 1: Restart OpenTabletDriver
-
-After installing, restart OTD:
-```fish
-systemctl --user restart opentabletdriver.service
-# OR kill and restart the GUI
-pkill -f OpenTabletDriver.UX.Gtk
-```
-
-### Step 2: Add Plugin to Filter Pipeline
-
-**Important**: This plugin is a **pipeline element** that needs to be added to the tablet's filter pipeline manually.
-
-1. Open OpenTabletDriver GUI
-2. Go to **Tablets** → Select your H1161
-3. Click **Configuration** or **Edit Configuration**
-4. In the **Filters** section, add:
-   - `H1161 Touch Strip → Aux Buttons`
-5. Save the configuration
-
-### Step 3: Configure Filter Settings
-
-In the filter settings:
-- **Wheel Report ID**: `08` (hex) - default, correct for H1161
-- **Wheel Data Byte Index**: `5` - default, correct for H1161
-- **Scroll Up Aux Button Index**: `12` - use 12+ to avoid conflicts
-- **Scroll Down Aux Button Index**: `13` - use 12+ to avoid conflicts
-- **Min Movement Threshold**: `1` - increase if too sensitive
-- **Debug Logging**: `false` - enable for troubleshooting
-
-### Step 4: Install Scroll Bindings Plugin
-
-1. Go to **Plugin Manager**
-2. Find and install **"Scroll Bindings"** by Mrcubix
-3. Restart OTD
-
-### Step 5: Configure Scroll Bindings
-
-1. Go to **Bindings** tab
-2. Find **Aux Button Bindings** or **Scroll Bindings** section
-3. Bind:
-   - **Aux 12** → Scroll Up (or Scroll Bindings → Vertical Scroll Up)
-   - **Aux 13** → Scroll Down (or Scroll Bindings → Vertical Scroll Down)
-4. Adjust scroll speed if needed
-
-### Step 6: Save and Apply
-
-Click **Save & Apply** in the main window.
+- **Byte 0**: Report ID = `0x08`
+- **Byte 1**: Identifier = `0xF0`
+- **Byte 5**: Position = `0x00` (no touch) or `0x01`–`0x07` (touch position, top to bottom)
 
 ## Troubleshooting
 
-### Touch strip not working?
+### Touch strip not scrolling
 
-#### 1. Verify plugin is loaded
-
-Check OTD logs:
-```fish
-journalctl --user -u opentabletdriver -f
-```
-
-Look for plugin loading messages or errors.
-
-#### 2. Enable debug logging
-
-1. In filter settings, enable **"Debug Logging"**
-2. Slide the touch strip
-3. Check console output for:
-   ```
-   [H1161TouchStrip] raw[12]: 08 F0 01 01 00 03 00 00 00 00 13 F5
-   [H1161TouchStrip] δ=+1 → DOWN pos=3
+1. **Check plugin is loaded** — look for `[H1161TouchStrip]` in OTD logs:
+   ```bash
+   journalctl --user -u opentabletdriver -f
    ```
 
-#### 3. Verify raw data
+2. **Enable debug logging** — set **Debug Logging** to `true` in filter settings, slide the strip, and check for output like:
+   ```
+   [H1161TouchStrip] δ=+1 → scroll 120
+   ```
 
-If you see different raw data:
-- Update **Wheel Report ID** to match the first byte
-- Update **Wheel Data Byte Index** to the position of the changing byte
+3. **Check evdev device exists**:
+   ```bash
+   cat /proc/bus/input/devices | grep -A5 "H1161 Touch Strip"
+   ```
 
-#### 4. Check filter pipeline
+4. **Check uinput permissions**:
+   ```bash
+   ls -la /dev/uinput
+   ```
+   The OTD daemon user needs write access to `/dev/uinput`. If you get permission errors, see the setup guide.
 
-Make sure the filter is actually in the tablet's filter pipeline:
-- Tablets → Configuration → Filters
-- The plugin should be listed there
+### evdev init error
 
-#### 5. Check aux button bindings
+If you see `Failed to initialize evdev` in the logs:
+- Ensure `libevdev` is installed
+- Ensure `/dev/uinput` exists and is writable
+- Try: `sudo modprobe uinput`
 
-In Bindings tab, verify:
-- Aux 12 and Aux 13 are bound to scroll actions
-- The bindings are enabled
+### Direction is inverted
 
-### Direction reversed?
+Enable **Reverse Scroll Direction** in the filter settings.
 
-If up/down are swapped:
-1. Swap the Scroll Up/Down indices in filter settings, OR
-2. Swap the bindings in Scroll Bindings settings
+### Too fast or too slow
 
-### Too sensitive or not sensitive enough?
-
-- **Too many scroll events**: Increase **Min Movement Threshold** to 2
-- **Not enough scroll events**: Keep threshold at 1
-
-## How It Works
-
-1. The plugin sits in the tablet report pipeline
-2. It inspects every raw HID report from the tablet
-3. When it sees report ID `08`, it extracts the touch position from byte 5
-4. It tracks position changes between reports:
-   - Increasing position (1→2→3...) = moving DOWN = Scroll Down
-   - Decreasing position (7→6→5...) = moving UP = Scroll Up
-5. On movement, it emits synthetic `IAuxReport` events:
-   - One with the target aux button pressed
-   - One with all buttons released
-6. Scroll Bindings plugin catches these aux events and converts to scroll actions
-
-## Technical Details
-
-### Touch Strip Positions
-
-The H1161 touch strip has 7 discrete positions (1-7):
-```
-Position 1: Top of strip
-Position 2-6: Middle positions
-Position 7: Bottom of strip
-```
-
-### Button Index Mappings
-
-- Physical buttons: 0-11 (12 buttons on H1161)
-- Touch strip scroll up: 12 (configurable)
-- Touch strip scroll down: 13 (configurable)
-
-### Report Format
-
-```
-Byte 0:    08 (Report ID)
-Byte 1-4:  F0 01 01 00 (fixed)
-Byte 5:    00-07 (touch position)
-Byte 6-11: 00 00 00 00 13 F5 (fixed/footer)
-```
+- **Too fast**: Increase **Scroll Delay** or decrease **Scroll Amount**
+- **Too slow**: Decrease **Scroll Delay** or increase **Scroll Amount**
 
 ## Files
 
-- `H1161TouchStripFilter.cs` - Main filter implementation
-- `SyntheticAuxReport.cs` - Synthetic aux button report class
-- `H1161TouchStrip.csproj` - Build configuration
-- `build-and-install.fish` - Build and install script
-- `README.md` - This file
+| File | Description |
+|---|---|
+| `H1161TouchStripFilter.cs` | Main filter — processes touch strip reports and emits scroll events via evdev |
+| `EvdevDevice.cs` | Linux evdev/uinput wrapper using libevdev P/Invoke |
+| `H1161TouchStrip.csproj` | .NET 8.0 project file |
+| `build-and-install.fish` | Fish shell build and install script |
 
 ## License
 
@@ -205,4 +174,5 @@ Feel free to modify and redistribute.
 
 ## Credits
 
-Based on OpenTabletDriver plugin API. Compatible with Scroll Bindings plugin by Mrcubix.
+- Evdev device implementation based on the [Scroll Bindings](https://github.com/Mrcubix/Scroll-Bindings) plugin by Mrcubix
+- Built for [OpenTabletDriver](https://opentabletdriver.net/)
