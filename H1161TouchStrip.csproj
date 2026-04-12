@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+<PropertyGroup>
+<TargetFramework>net8.0</TargetFramework>
+<Nullable>enable</Nullable>
+<ImplicitUsings>enable</ImplicitUsings>
+<AssemblyName>H1161TouchStrip</AssemblyName>
+<RootNamespace>H1161TouchStrip</RootNamespace>
+</PropertyGroup>
+
+<ItemGroup>
+<PackageReference Include="OpenTabletDriver.Plugin" Version="0.6.*" />
+</ItemGroup>
+
+</Project>
