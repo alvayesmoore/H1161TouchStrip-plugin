@@ -18,8 +18,11 @@ Converts the Huion Inspiroy H1161 touch strip into native Linux scroll events us
 
 ## Prerequisites
 
-- **Linux** (evdev/uinput kernel support required)
+- **Linux** or **Windows**
 - **.NET SDK 8.0**
+
+### Linux-specific
+
 - **libevdev** — system library for virtual input device creation
 
 Install libevdev:
@@ -39,7 +42,17 @@ sudo dnf install libevdev-devel
 
 ### Build from source
 
+**Linux:**
+
 ```bash
+git clone https://github.com/alvayesmoore/H1161TouchStrip-plugin.git
+cd H1161TouchStrip-plugin
+dotnet build -c Release
+```
+
+**Windows (PowerShell):**
+
+```powershell
 git clone https://github.com/alvayesmoore/H1161TouchStrip-plugin.git
 cd H1161TouchStrip-plugin
 dotnet build -c Release
@@ -47,24 +60,51 @@ dotnet build -c Release
 
 ### Install the plugin
 
+**Linux:**
+
 ```bash
 mkdir -p ~/.config/OpenTabletDriver/Plugins/H1161TouchStrip
 cp bin/Release/net8.0/H1161TouchStrip.dll ~/.config/OpenTabletDriver/Plugins/H1161TouchStrip/
 ```
 
+**Windows:**
+
+```powershell
+# Create plugins directory if it doesn't exist
+$pluginDir = "$env:USERPROFILE\.config\OpenTabletDriver\Plugins\H1161TouchStrip"
+if (!(Test-Path $pluginDir)) {
+    New-Item -ItemType Directory -Path $pluginDir -Force
+}
+Copy-Item bin\Release\net8.0\H1161TouchStrip.dll $pluginDir\
+```
+
 Or use the included script:
+
+**Linux:**
 
 ```bash
 chmod +x build-and-install.fish
 ./build-and-install.fish
 ```
 
+**Windows:**
+
+```powershell
+.\build-and-install.ps1
+```
+
 ### Restart OpenTabletDriver
+
+**Linux:**
 
 ```bash
 systemctl --user restart opentabletdriver.service
 # OR restart the GUI manually
 ```
+
+**Windows:**
+
+Restart the OpenTabletDriver daemon or restart the GUI manually.
 
 ## Configuration
 
@@ -134,28 +174,38 @@ Key bytes:
 
 ### Touch strip not scrolling
 
+**Linux:**
+
 1. **Check plugin is loaded** — look for `[H1161TouchStrip]` in OTD logs:
-   ```bash
-   journalctl --user -u opentabletdriver -f
-   ```
+```bash
+journalctl --user -u opentabletdriver -f
+```
 
 2. **Enable debug logging** — set **Debug Logging** to `true` in filter settings, slide the strip, and check for output like:
-   ```
-   [H1161TouchStrip] δ=+1 → scroll 120
-   ```
+```
+[H1161TouchStrip] δ=+1 → scroll 120
+```
 
 3. **Check evdev device exists**:
-   ```bash
-   cat /proc/bus/input/devices | grep -A5 "H1161 Touch Strip"
-   ```
+```bash
+cat /proc/bus/input/devices | grep -A5 "H1161 Touch Strip"
+```
 
 4. **Check uinput permissions**:
-   ```bash
-   ls -la /dev/uinput
-   ```
-   The OTD daemon user needs write access to `/dev/uinput`. If you get permission errors, see the setup guide.
+```bash
+ls -la /dev/uinput
+```
+The OTD daemon user needs write access to `/dev/uinput`. If you get permission errors, see the setup guide.
 
-### evdev init error
+**Windows:**
+
+1. **Check plugin is loaded** — look for `[H1161TouchStrip]` in OTD logs or the log viewer in the GUI.
+
+2. **Enable debug logging** — set **Debug Logging** to `true` in filter settings, slide the strip, and check the log output.
+
+3. **Verify tablet mode** — ensure the tablet output mode is set to **Absolute** (not **Relative**).
+
+### evdev init error (Linux only)
 
 If you see `Failed to initialize evdev` in the logs:
 - Ensure `libevdev` is installed

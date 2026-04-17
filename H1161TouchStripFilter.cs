@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Timers;
 using OpenTabletDriver.Plugin.Attributes;
 using OpenTabletDriver.Plugin.Output;
@@ -91,7 +92,7 @@ private int _scrollDelay = 15;
 private int _scrollAmount = 120;
 private double _inertiaFriction = 0.85;
 private bool _disposed = false;
-private EvdevDevice? _wheelDevice;
+private VirtualMouseDevice? _wheelDevice;
 private System.Timers.Timer? _scrollTimer;
 private int _pendingScrollAmount = 0;
 private bool _isScrolling = false;
@@ -102,6 +103,9 @@ public H1161TouchStripFilter()
 {
 try
 {
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+_wheelDevice = new WindowsInputDevice("H1161 Touch Strip");
+else
 _wheelDevice = new EvdevDevice("H1161 Touch Strip");
 _wheelDevice.EnableTypeCodes(EventType.EV_REL);
 _wheelDevice.EnableTypeCodes(EventType.EV_REL,
@@ -112,9 +116,9 @@ EventCode.REL_HWHEEL_HI_RES
 );
 
 var result = _wheelDevice.Initialize();
-if (result != ERRNO.NONE)
+if (result != (int)ERRNO.NONE)
 {
-Console.WriteLine($"[H1161TouchStrip] Failed to initialize evdev: {result}");
+Console.WriteLine($"[H1161TouchStrip] Failed to initialize virtual mouse device: {result}");
 _wheelDevice?.Dispose();
 _wheelDevice = null;
 }
